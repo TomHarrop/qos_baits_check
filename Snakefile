@@ -17,6 +17,8 @@ logdir = Path(outdir, "logs")
 kmer_counts = Path(outdir, "020_kmer-counts")
 usearch_output = Path(outdir, "030_usearch-clusters")
 
+sequence_identities_to_check = [80, 85, 90, 95, 96, 97, 98, 99]
+
 # containers
 bbmap = "docker://quay.io/biocontainers/bbmap:39.01--h92535d8_1"
 kmc = "docker://quay.io/biocontainers/kmc:3.2.4--h6dccd9a_2"
@@ -71,7 +73,7 @@ rule collate_counts:
                 "clusters.id{sequence_identity}.count.csv",
             ),
             fasta_file=all_fastas,
-            sequence_identity=list(range(95, 100, 1)),
+            sequence_identity=sequence_identities_to_check,
         ),
     output:
         csv=Path(outdir, "040_collated-kmer-counts", "counts.csv"),
