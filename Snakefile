@@ -73,8 +73,6 @@ rule count_clustered_kmers:
         "> {output} "
 
 
-
-
 rule usearch:
     input:
         counts=Path(
@@ -94,9 +92,10 @@ rule usearch:
             "usearch",
             "{fasta_file}.id{sequence_identity}.log",
         ),
-    threads: workflow.cores // 2
+    threads: 32
     resources:
         mem_mb=int(6e3),
+        time=30,
     container:
         usearch
     shadow:

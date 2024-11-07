@@ -26,6 +26,6 @@ printf "TMPDIR: %s\n" "${TMPDIR}"
 snakemake \
 	--profile petrichor_tmp \
 	--keep-going \
-	--retries 2 \
+	--retries 0 \
 	--cores 64 \
 	--local-cores 2
