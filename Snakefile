@@ -17,7 +17,7 @@ logdir = Path(outdir, "logs")
 kmer_counts = Path(outdir, "020_kmer-counts")
 usearch_output = Path(outdir, "030_usearch-clusters")
 
-sequence_identities_to_check = [80, 85, 90, 95, 96, 97, 98, 99]
+sequence_identities_to_check = [80, 85, 87, 90, 95, 96, 97, 98, 99]
 
 # containers
 bbmap = "docker://quay.io/biocontainers/bbmap:39.01--h92535d8_1"
