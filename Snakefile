@@ -128,7 +128,7 @@ rule usearch:
     threads: 32
     resources:
         mem_mb=int(6e3),
-        time=120,
+        time=360,
     container:
         usearch
     shadow:
