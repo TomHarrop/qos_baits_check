@@ -17,8 +17,10 @@ logdir = Path(outdir, "logs")
 kmer_counts = Path(outdir, "020_kmer-counts")
 usearch_output = Path(outdir, "030_usearch-clusters")
 
+# containers
 bbmap = "docker://quay.io/biocontainers/bbmap:39.01--h92535d8_1"
 kmc = "docker://quay.io/biocontainers/kmc:3.2.4--h6dccd9a_2"
+r = "docker://ghcr.io/tomharrop/r-containers:r2u_24.04_cv1"
 usearch = "docker://quay.io/biocontainers/usearch:12.0_beta--h9ee0642_1"
 
 # MAIN
@@ -50,6 +52,35 @@ fasta_dict[
 )
 
 all_fastas = sorted(set(fasta_dict.keys())) + ["all"]
+
+
+rule collate_counts:
+    input:
+        unclustered_kmer_counts=expand(
+            Path(
+                kmer_counts,
+                "{fasta_file}",
+                "kmer_counts.json",
+            ),
+            fasta_file=all_fastas,
+        ),
+        clustered_kmer_counts=expand(
+            Path(
+                usearch_output,
+                "{fasta_file}",
+                "clusters.id{sequence_identity}.count.csv",
+            ),
+            fasta_file=all_fastas,
+            sequence_identity=list(range(95, 100, 1)),
+        ),
+    output:
+        csv=Path(outdir, "040_collated-kmer-counts", "counts.csv"),
+    log:
+        Path(logdir, "collate_counts.log"),
+    container:
+        r
+    script:
+        "src/collate_counts.R"
 
 
 rule count_clustered_kmers:
@@ -95,7 +126,7 @@ rule usearch:
     threads: 32
     resources:
         mem_mb=int(6e3),
-        time=30,
+        time=120,
     container:
         usearch
     shadow:
@@ -222,8 +253,4 @@ rule dotdashxton:
 rule target:
     default_target: True
     input:
-        expand(
-            [str(x) for x in rules.count_clustered_kmers.output],
-            fasta_file=all_fastas,
-            sequence_identity=list(range(95, 100, 1)),
-        ),
+        Path(outdir, "040_collated-kmer-counts", "counts.csv"),
