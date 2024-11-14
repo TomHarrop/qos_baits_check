@@ -31,6 +31,9 @@ fasta_files = data_dir.rglob("*.fasta")
 fasta_dict = {}
 alignment_dict = {}
 
+# which bait sizes do we want to analyse?
+bait_sizes = ["80", "120"]
+
 # get the fasta files
 for fasta_file in fasta_files:
     my_stem = fasta_file.stem
@@ -61,7 +64,7 @@ rule collate_counts:
         unclustered_kmer_counts=expand(
             Path(
                 kmer_counts,
-                "{fasta_file}",
+                "{fasta_file}.k{{k}}",
                 "kmer_counts.json",
             ),
             fasta_file=all_fastas,
@@ -69,16 +72,16 @@ rule collate_counts:
         clustered_kmer_counts=expand(
             Path(
                 usearch_output,
-                "{fasta_file}",
+                "{fasta_file}.k{{k}}",
                 "clusters.id{sequence_identity}.count.csv",
             ),
             fasta_file=all_fastas,
             sequence_identity=sequence_identities_to_check,
         ),
     output:
-        csv=Path(outdir, "040_collated-kmer-counts", "counts.csv"),
+        csv=Path(outdir, "040_collated-kmer-counts", "counts.k{k}.csv"),
     log:
-        Path(logdir, "collate_counts.log"),
+        Path(logdir, "collate_counts.k{k}.log"),
     container:
         r
     script:
@@ -89,13 +92,13 @@ rule count_clustered_kmers:
     input:
         Path(
             usearch_output,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "clusters.id{sequence_identity}.fasta",
         ),
     output:
         Path(
             usearch_output,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "clusters.id{sequence_identity}.count.csv",
         ),
     shell:
@@ -110,20 +113,20 @@ rule usearch:
     input:
         counts=Path(
             kmer_counts,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "kmer_counts.txt",
         ),
     output:
         Path(
             usearch_output,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "clusters.id{sequence_identity}.fasta",
         ),
     log:
         Path(
             logdir,
             "usearch",
-            "{fasta_file}.id{sequence_identity}.log",
+            "{fasta_file}.k{k}.id{sequence_identity}.log",
         ),
     threads: 32
     resources:
@@ -152,22 +155,22 @@ rule count_kmers:
     output:
         kmc_pre=Path(
             kmer_counts,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "kmer_counts.kmc_pre",
         ),
         kmc_suf=Path(
             kmer_counts,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "kmer_counts.kmc_suf",
         ),
         counts=Path(
             kmer_counts,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "kmer_counts.txt",
         ),
         stats=Path(
             kmer_counts,
-            "{fasta_file}",
+            "{fasta_file}.k{k}",
             "kmer_counts.json",
         ),
     params:
@@ -176,7 +179,7 @@ rule count_kmers:
         Path(
             logdir,
             "count_kmers",
-            "{fasta_file}.log",
+            "{fasta_file}.k{k}.log",
         ),
     threads: 2
     resources:
@@ -187,7 +190,7 @@ rule count_kmers:
         kmc
     shell:
         "kmc "
-        "-k80 "
+        "-k{wildcards.k} "
         "-ci1 "
         '"-m$(( {resources.mem_mb}/1000 ))" '
         "-fm "
@@ -255,4 +258,7 @@ rule dotdashxton:
 rule target:
     default_target: True
     input:
-        Path(outdir, "040_collated-kmer-counts", "counts.csv"),
+        expand(
+            Path(outdir, "040_collated-kmer-counts", "counts.k{k}.csv"),
+            k=bait_sizes,
+        ),
